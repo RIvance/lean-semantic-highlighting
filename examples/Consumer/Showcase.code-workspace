@@ -1,0 +1,22 @@
+{
+  "folders": [{ "path": "." }],
+  "settings": {
+    "workbench.colorTheme": "Dark Modern",
+    "editor.semanticHighlighting.enabled": true,
+    "editor.semanticTokenColorCustomizations": {
+      "rules": {
+        "class:lean4": "#57B8AC",
+        "typeParameter:lean4": "#9ADBCB",
+        "interface:lean4": "#68C5D0",
+        "struct:lean4": "#6ACD9B",
+        "enum:lean4": "#8FC9B1",
+        "type:lean4": "#4EC9B0",
+        "enumMember:lean4": "#F7ADAD",
+        "property:lean4": "#86C6E8",
+        "function:lean4": "#DCDCAA",
+        "parameter:lean4": "#B5E1FA",
+        "variable:lean4": "#9CDCFE"
+      }
+    }
+  }
+}
