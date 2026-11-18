@@ -1,0 +1,66 @@
+name: VS Code extension
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.base_ref == github.event.repository.default_branch) ||
+      (github.event_name == 'push' && !github.event.deleted && github.ref_name == github.event.repository.default_branch)
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: vscode/package-lock.json
+      - uses: leanprover/lean-action@v1
+        with:
+          build: 'false'
+          test: 'true'
+          auto-config: 'false'
+      - run: npm ci
+        working-directory: vscode
+      - run: npm test
+        working-directory: vscode
+      - name: VS Code integration (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run test:integration
+        working-directory: vscode
+      - name: VS Code integration (Windows and macOS)
+        if: runner.os != 'Linux'
+        run: npm run test:integration
+        working-directory: vscode
+  package:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: vscode/package-lock.json
+      - run: npm ci
+        working-directory: vscode
+      - run: npm run package
+        working-directory: vscode
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vscode-extension
+          path: vscode/*.vsix
+          if-no-files-found: error

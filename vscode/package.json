@@ -1,0 +1,48 @@
+{
+  "name": "lean-semantic-highlighting",
+  "displayName": "Lean Semantic Highlighting",
+  "description": "Additional semantic highlighting for Lean types, functions, constructors, fields, and local variables.",
+  "version": "0.1.0",
+  "publisher": "lean4-ide-tools",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lean4-ide-tools/lean-semantic-highlighting.git",
+    "directory": "vscode"
+  },
+  "engines": { "vscode": "^1.75.0", "node": ">=22" },
+  "categories": ["Programming Languages"],
+  "keywords": ["lean", "lean4", "semantic highlighting"],
+  "preview": true,
+  "extensionKind": ["workspace"],
+  "extensionDependencies": ["leanprover.lean4"],
+  "activationEvents": ["onLanguage:lean4"],
+  "main": "./out/src/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "Builds and loads a native Lean highlighting plugin using the workspace's toolchain."
+    },
+    "virtualWorkspaces": { "supported": false }
+  },
+  "contributes": {
+    "configurationDefaults": {
+      "[lean4]": { "editor.semanticHighlighting.enabled": true }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "build": "npm run compile && node scripts/prepare-server.mjs",
+    "vscode:prepublish": "npm run build",
+    "test": "npm run build && node --test out/test/launcher.test.js",
+    "test:integration": "npm run build && node out/test/runIntegration.js",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "1.75.1",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^4.1.1",
+    "typescript": "~5.9.3"
+  }
+}

@@ -394,9 +394,6 @@ def userSettingsActivation (root : System.FilePath) : IO Unit := do
 /-- One global configuration follows project pins and explicit elan toolchain overrides. -/
 def automaticActivation (root : System.FilePath)
     (versions : Array String := #[Lean.versionString]) : IO Unit := do
-  if System.Platform.isWindows then
-    IO.println "SKIP automatic POSIX launcher on Windows"
-    return
   let env : Array (String × Option String) :=
     #["ELAN_TOOLCHAIN", "LEAN_PATH", "LEAN_SRC_PATH", "LEAN_SYSROOT", "LAKE_HOME",
       "LEAN", "LAKE", "LEAN_AR", "LEAN_CC", "LEAN_GITHASH", "LAKE_OVERRIDE_LEAN",
@@ -404,7 +401,7 @@ def automaticActivation (root : System.FilePath)
   let text ← IO.FS.readFile (root / "examples/Consumer/Demo.lean")
   let sourcePin ← IO.FS.readFile (root / "lean-toolchain")
   IO.FS.withTempDir fun workspace => do
-    -- Exercise shell quoting and installation without any existing build/cache.
+    -- Exercise paths with spaces and quotes without any existing build/cache.
     let source := workspace / "plugin's checkout"
     IO.FS.createDirAll source
     for name in #["lakefile.lean", "SemanticHighlighting.lean", "SemanticHighlighting", "tools", "LICENSE"] do
@@ -417,6 +414,8 @@ def automaticActivation (root : System.FilePath)
     let paths ← IO.ofExcept <| settings.getObjValAs? (Array String) "lean4.envPathExtensions"
     ensure (paths.size == 1) "Expected a single launcher directory"
     let bin := System.FilePath.mk paths[0]!
+    let lean := bin / (if System.Platform.isWindows then "lean.exe" else "lean")
+    let lake := bin / (if System.Platform.isWindows then "lake.exe" else "lake")
     for version in versions do
       let toolchain := s!"leanprover/lean4:v{version}"
       for mode in #["lake", "standalone"] do
@@ -430,18 +429,18 @@ def automaticActivation (root : System.FilePath)
         if mode == "lake" then
           IO.FS.writeFile (consumer / "lakefile.toml") lakefile
           let update ← IO.Process.output {
-            cmd := (bin / "lake").toString, args := #["--keep-toolchain", "update"],
+            cmd := lake.toString, args := #["--keep-toolchain", "update"],
             cwd := some consumer, env }
           ensure (update.exitCode == 0) s!"Lake passthrough failed: {update.stdout}{update.stderr}"
         let plain ← IO.Process.output {
-          cmd := (bin / "lean").toString, args := #[s!"+{toolchain}", "--version"],
+          cmd := lean.toString, args := #[s!"+{toolchain}", "--version"],
           cwd := some consumer, env }
         ensure (plain.exitCode == 0 && plain.stdout.startsWith s!"Lean (version {version},")
           s!"Lean passthrough selected the wrong version: {plain.stdout}{plain.stderr}"
         let (cmd, args) := if mode == "lake" then
-          (bin / "lake", #["serve", "--", consumer.toString])
+          (lake, #["serve", "--", consumer.toString])
         else
-          (bin / "lean", #[s!"+{toolchain}", "--server", consumer.toString])
+          (lean, #[s!"+{toolchain}", "--server", consumer.toString])
         withServer consumer cmd.toString args (env := env) (timeoutSeconds := 180) do
           let uri ← openDoc consumer "Demo.lean" text
           let mark := (← get).events.size
@@ -475,9 +474,9 @@ def automaticActivation (root : System.FilePath)
     IO.println "PASS separate toolchain caches reused across server launches"
     if let some version := versions[0]? then
       let prepareArgs := #[s!"+leanprover/lean4:v{version}", "--run",
-        (source / "tools/Launcher.lean").toString, "prepare", source.toString]
+        (source / "tools/Setup.lean").toString, "prepare", source.toString]
       let prepare := IO.Process.output {
-        cmd := (bin / "lean").toString, args := prepareArgs, cwd := some source, env }
+        cmd := lean.toString, args := prepareArgs, cwd := some source, env }
       let warm ← prepare
       ensure (warm.exitCode == 0 && warm.stderr.isEmpty) s!"Warm cache was not reused: {warm.stderr}"
       let oldLibrary := System.FilePath.mk (trimString warm.stdout)
@@ -496,7 +495,7 @@ def automaticActivation (root : System.FilePath)
       IO.FS.writeFile (consumer / "lean-toolchain") s!"leanprover/lean4:v{version}\n"
       IO.FS.writeFile (consumer / "Demo.lean") text
       IO.eprintln "Testing fallback with an intentionally invalid plugin; the following build error is expected."
-      withServer consumer (bin / "lean").toString #["--server", consumer.toString]
+      withServer consumer lean.toString #["--server", consumer.toString]
           (env := env) (timeoutSeconds := 180) do
         let uri ← openDoc consumer "Demo.lean" text
         sync uri

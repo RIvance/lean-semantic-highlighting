@@ -2,7 +2,9 @@
 
 See the difference between types, functions, constructors, and proof hypotheses while reading Lean code. This plugin adds richer semantic highlighting to the standard Lean language server, using what Lean knows about each identifier.
 
-Use your existing Lean toolchain and editor extension. No patched compiler, additional VS Code extension, or imports in your Lean files are needed.
+Use your existing Lean toolchain and the official Lean editor extension. No patched compiler or imports in your Lean files are needed.
+
+To enable highlighting across your VS Code projects, install the [companion extension](vscode/README.md). You can also enable it for a single project through Lake.
 
 ![Lean code in VS Code with Dark Modern-inspired semantic colors for types, structures, typeclasses, functions, constructors, fields, and local variables](docs/images/vscode-highlighting.png)
 
@@ -59,11 +61,25 @@ Open `Demo.lean` in that workspace and wait for Lean to finish checking it. The 
 
 You can also use **File > Open Workspace from File** to open `Showcase.code-workspace`. To try the example with your existing theme instead, open the `examples/Consumer` folder directly.
 
+## VS Code companion extension (preview)
+
+The extension works with the official Lean 4 extension on Windows, macOS, and Linux. See the [installation instructions and color settings](vscode/README.md).
+
+To build the VSIX from this checkout, run the following commands from the repository root with Node.js 22 or newer.
+
+```sh
+cd vscode
+npm ci
+npm run package
+```
+
+In VS Code, run **Extensions: Install from VSIX…** and select the `.vsix` file in `vscode/`.
+
 ## Use it in VS Code without changing a project
 
 You can enable the plugin globally in VS Code User Settings. This works with ordinary Lake projects and standalone Lean files, including files from dependencies. The launcher automatically builds or reuses the plugin for the toolchain selected by elan, so you can switch projects and Lean versions with the same configuration.
 
-The automatic launcher requires **elan and Linux or macOS**. Linux is tested; macOS has not yet been validated. For Windows or a setup without elan, use [direct server arguments](#direct-server-arguments) below.
+The automatic launcher requires **elan and an installed Lean toolchain** on Windows, macOS, or Linux. The same Lean sources are used by the companion extension. For a setup without elan, use [direct server arguments](#direct-server-arguments) below.
 
 From the plugin repository, run:
 
@@ -71,7 +87,7 @@ From the plugin repository, run:
 lake run vscode-settings
 ```
 
-The command creates the launchers and prints a JSON object containing `lean4.envPathExtensions` and `editor.semanticHighlighting.enabled`. It does not edit your VS Code configuration.
+The command compiles the Lean launcher locally and prints a JSON object containing `lean4.envPathExtensions` and `editor.semanticHighlighting.enabled`. It does not edit your VS Code configuration.
 
 1. With the standard Lean 4 extension installed, run **Preferences: Open User Settings (JSON)** from the Command Palette.
 2. Merge the printed settings. If you already have `lean4.envPathExtensions`, put the generated directory first in that array.
@@ -157,11 +173,9 @@ To disable the plugin, remove its target from `plugins` and reload the editor wi
 
 ## Supported Lean versions
 
-The plugin has been tested on these stable releases:
+Supported stable Lean releases include the following versions.
 
 **4.24.0, 4.25.0, 4.25.1, 4.25.2, 4.26.0, 4.28.0, 4.34.1, and 4.35.0.**
-
-Other releases are not yet covered by the test matrix. Release candidates are outside the compatibility target. Linux x86-64 is tested; macOS and Windows have not yet been validated.
 
 The automatic launcher and Lake dependency setup both build the plugin using your project's exact Lean version and platform. Source compatibility across releases does not mean one native library can be loaded by all of them; these setups manage the separate builds for you.
 
@@ -241,6 +255,8 @@ To check switching toolchains with a single global launcher configuration:
 ```sh
 lake env lean --run tests/Main.lean --launcher-only 4.24.0 4.35.0
 ```
+
+For the VS Code extension tests, run `npm ci`, `npm test`, and `npm run test:integration` from `vscode/`. The integration test opens a temporary project in an isolated VS Code profile with the official Lean extension. On headless Linux, run it under Xvfb. To reuse local installations, set `VSCODE_EXECUTABLE_PATH` to the editor executable and `LEAN4_EXTENSION_PATH` to the official extension directory.
 
 ## Troubleshooting
 
