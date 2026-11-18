@@ -36,7 +36,7 @@ script «vscode-settings» (args) do
     let root ← IO.FS.realPath (← getRootPackage).dir
     let proc ← IO.Process.spawn {
       cmd := (← getLean).toString,
-      args := #["--run", (root / "tools/Launcher.lean").toString, "install", root.toString] }
+      args := #["--run", (root / "tools/Setup.lean").toString, "install", root.toString] }
     return ← proc.wait
   unless args == ["--direct"] do
     throw <| IO.userError "Usage: lake run vscode-settings [--direct]"
