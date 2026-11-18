@@ -1,9 +1,9 @@
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { execFile } from 'node:child_process'
+import { exec, execFile } from 'node:child_process'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 import { promisify } from 'node:util'
-import { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath, runTests } from '@vscode/test-electron'
+import { downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath, runTests } from '@vscode/test-electron'
 
 async function main(): Promise<void> {
   const extensionDevelopmentPath = resolve(__dirname, '../..')
@@ -40,16 +40,25 @@ async function main(): Promise<void> {
     if (installedLean) await cp(installedLean, join(extensions, 'leanprover.lean4'), { recursive: true })
     const vscodeExecutablePath = process.env.VSCODE_EXECUTABLE_PATH ?? await downloadAndUnzipVSCode()
     if (!installedLean) {
-      const [cli, ...args] = resolveCliArgsFromVSCodeExecutablePath(vscodeExecutablePath)
-      if (!cli) throw new Error('Cannot locate the VS Code CLI for installing the test dependency.')
-      const installArgs = ['--extensions-dir', extensions, '--user-data-dir', userData, '--install-extension', 'leanprover.lean4']
+      const cli = resolveCliPathFromVSCodeExecutablePath(vscodeExecutablePath)
+      const installArgs = ['--install-extension', 'leanprover.lean4']
       if (process.platform === 'win32') {
-        // Invoke VS Code's JavaScript CLI directly, avoiding code.cmd and a shell.
-        await promisify(execFile)(vscodeExecutablePath,
-          [join(dirname(vscodeExecutablePath), 'resources/app/out/cli.js'), ...installArgs],
-          { env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }, timeout: 120_000 })
+        // code.cmd locates its build's CLI. Pass paths through the environment so cmd preserves them.
+        await promisify(exec)([
+          '"%VSCODE_TEST_CLI%"', '--extensions-dir "%VSCODE_TEST_EXTENSIONS%"',
+          '--user-data-dir "%VSCODE_TEST_USER_DATA%"', ...installArgs,
+        ].join(' '), {
+          env: {
+            ...process.env,
+            VSCODE_TEST_CLI: cli,
+            VSCODE_TEST_EXTENSIONS: extensions,
+            VSCODE_TEST_USER_DATA: userData,
+          },
+          timeout: 120_000,
+        })
       } else {
-        await promisify(execFile)(cli, [...args, ...installArgs], { timeout: 120_000 })
+        await promisify(execFile)(cli, ['--extensions-dir', extensions, '--user-data-dir', userData, ...installArgs],
+          { timeout: 120_000 })
       }
     }
     await runTests({

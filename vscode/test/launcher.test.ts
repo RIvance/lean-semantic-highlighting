@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFile, spawn } from 'node:child_process'
-import { copyFile, cp, link, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { copyFile, cp, link, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { homedir, tmpdir } from 'node:os'
 import { delimiter, join, resolve } from 'node:path'
 import { test } from 'node:test'
@@ -8,6 +8,15 @@ import { promisify } from 'node:util'
 import { addLauncherToPath, installLaunchers } from '../src/launcher'
 
 const exec = promisify(execFile)
+
+async function assertSameFile(actual: string | undefined, expected: string): Promise<void> {
+  assert.ok(actual, `Missing path for ${expected}`)
+  const [actualStat, expectedStat] = await Promise.all([
+    stat(actual, { bigint: true }), stat(expected, { bigint: true }),
+  ])
+  assert.deepEqual([actualStat.dev, actualStat.ino], [expectedStat.dev, expectedStat.ino],
+    `Expected ${actual} to refer to ${expected}`)
+}
 
 test('PATH registration and cleanup preserve subsequent changes', () => {
   const env: NodeJS.ProcessEnv = { PATH: ['/usr/bin', '/bin'].join(delimiter), EXISTING: 'before' }
@@ -74,8 +83,14 @@ test('Lean sources compile locally and preserve arguments, streams, exits, and s
       for (const override of [[], ['+leanprover/lean4:v4.24.0']]) {
         const args = [...(command === 'lake' ? ['serve', '--'] : ['--server']), ...unusual]
         const result = await exec(wrapper, [...override, ...args], { env })
-        assert.deepEqual(JSON.parse(result.stdout), [...override, '--run', join(source, 'tools', 'ServerLauncher.lean'),
-          command, source, join(storage, 'cache'), ...args])
+        const argv: string[] = JSON.parse(result.stdout)
+        const interpreterArgs = [...override, '--run']
+        assert.deepEqual(argv.slice(0, interpreterArgs.length), interpreterArgs)
+        const [script, tool, sourceDir, ...rest] = argv.slice(interpreterArgs.length)
+        await assertSameFile(script, join(source, 'tools', 'ServerLauncher.lean'))
+        assert.equal(tool, command)
+        await assertSameFile(sourceDir, source)
+        assert.deepEqual(rest, [join(storage, 'cache'), ...args])
       }
       const request = exec(wrapper, command === 'lake' ? ['serve'] : ['--server'], { env: { ...env, TEST_ECHO: '1' } })
       const input = 'Content-Length: 16\r\n\r\n{"text":"😀"}'
