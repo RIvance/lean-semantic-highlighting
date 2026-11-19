@@ -1,16 +1,25 @@
-# Lean Semantic Highlighting
+# Lean 4 Semantic Highlighting
 
-This extension works with the official Lean 4 extension to color identifiers according to their meaning. For example, in `tree.value` Lean recognizes `tree` as a local variable and `value` as a structure field. Your theme can give them different colors.
+See the role of each name as you read Lean code and proofs. In `tree.value`, for example, your theme can color `tree` as a local variable and `value` as a structure field. Highlighting uses the official Lean 4 extension and updates as you edit.
 
-## Installation
+## Lean toolchain compatibility
 
-Use VS Code on Windows, macOS, or Linux with elan and your project's Lean toolchain installed. For SSH, WSL, or a dev container, install the extension and Lean in the remote environment.
+The extension uses your project's Lean toolchain. Run `lean --version` in the project folder to see which version is active.
 
-1. Download the `vscode-extension` artifact from a successful GitHub Actions run and unzip it.
-2. In VS Code, run **Extensions: Install from VSIX…** and select the extracted `.vsix` file. VS Code also installs the official Lean 4 extension if needed.
-3. Open a Lean file in a trusted workspace. The first time you use a Lean toolchain, the extension builds the highlighting plugin for that version. Later sessions reuse the build.
+- **Tested releases** include 4.24.0, 4.25.0, 4.25.1, 4.25.2, 4.26.0, 4.28.0, 4.34.1, and 4.35.0.
+- **Known incompatible releases** include 4.7.0, 4.17.0, and 4.20.0. Other unlisted releases and nightlies may work, depending on their Lean language-server APIs.
 
-If you previously enabled this plugin through Lake or VS Code settings, remove its Lake `plugins` entry, its `--plugin` argument in `lean4.serverArgs`, or its launcher directory in `lean4.envPathExtensions` before using the extension.
+If the plugin fails to build, Lean continues with its standard highlighting. In **View → Output**, select **Lean 4** for plugin build errors or **Lean 4 Semantic Highlighting** for extension startup errors.
+
+## What gets highlighted
+
+![Lean code in VS Code showing the Tree structure in green, the Renderable typeclass in cyan, and the Signal constructors in pink.](https://raw.githubusercontent.com/lean4-ide-tools/lean4-semantic-highlighting/HEAD/docs/images/vscode-highlighting.png)
+
+*The screenshot uses Dark Modern with the [example workspace’s color settings](https://github.com/lean4-ide-tools/lean4-semantic-highlighting/blob/HEAD/examples/Consumer/Showcase.code-workspace).*
+
+- **Types and typeclasses.** Lean recognizes `Tree` as a structure, `Renderable` as a typeclass, and `Items` as a type alias even though it was declared with `def`.
+- **Constructors and fields.** In `.cons .go (.cons .stop .nil)`, the names keep their constructor highlighting even when the type names are omitted. Field projections such as `tree.value` have their own color rule.
+- **Propositions and proofs.** A proposition family such as `NonemptyItems` has its own category. Local hypotheses such as `hp` in `step hp` use the local-variable color.
 
 ## Colors
 
@@ -43,12 +52,6 @@ The `:lean4` suffix limits a rule to Lean files. Use these token names to custom
 | Term definitions, theorems, axioms, recursors | `function` |
 | Local term binders | `parameter` |
 | Local term uses and proof hypotheses | `variable` |
-
-## Troubleshooting
-
-If different identifiers still look alike, check that `editor.semanticHighlighting.enabled` is enabled for Lean. Some themes use the same color for several token types. Try the rules above to make the difference visible.
-
-If setup fails, open **View > Output** and select **Lean Semantic Highlighting**. The **Lean 4** output channel shows errors from building the plugin with your project's toolchain.
 
 ## License
 

@@ -5,7 +5,7 @@ import type { LeanExports } from './leanApi'
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   if (!vscode.workspace.isTrusted) return
-  const output = vscode.window.createOutputChannel('Lean Semantic Highlighting')
+  const output = vscode.window.createOutputChannel('Lean 4 Semantic Highlighting')
   context.subscriptions.push(output)
 
   let disposed = false
@@ -14,7 +14,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     if (disposed) return
     output.appendLine(String(error))
     void vscode.window.showWarningMessage(
-      'Lean Semantic Highlighting could not start. See its Output channel for details. Lean remains available.',
+      'Lean 4 Semantic Highlighting could not start. See its Output channel for details. Lean remains available.',
     )
   }
   try {

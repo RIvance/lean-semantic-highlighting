@@ -61,7 +61,7 @@ Open `Demo.lean` in that workspace and wait for Lean to finish checking it. The 
 
 You can also use **File > Open Workspace from File** to open `Showcase.code-workspace`. To try the example with your existing theme instead, open the `examples/Consumer` folder directly.
 
-## VS Code companion extension (preview)
+## VS Code companion extension
 
 The extension works with the official Lean 4 extension on Windows, macOS, and Linux. See the [installation instructions and color settings](vscode/README.md).
 
@@ -173,9 +173,11 @@ To disable the plugin, remove its target from `plugins` and reload the editor wi
 
 ## Supported Lean versions
 
-Supported stable Lean releases include the following versions.
+The test matrix covers the following stable releases.
 
 **4.24.0, 4.25.0, 4.25.1, 4.25.2, 4.26.0, 4.28.0, 4.34.1, and 4.35.0.**
+
+The VS Code extension is incompatible with Lean 4.7.0, 4.17.0, and 4.20.0. Other unlisted releases and nightlies may work, depending on their Lean language-server APIs. Run `lean --version` in your project folder to check the active toolchain.
 
 The automatic launcher and Lake dependency setup both build the plugin using your project's exact Lean version and platform. Source compatibility across releases does not mean one native library can be loaded by all of them; these setups manage the separate builds for you.
 
