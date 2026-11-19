@@ -60,7 +60,7 @@ export async function run(): Promise<void> {
   const argsBefore = JSON.stringify(vscode.workspace.getConfiguration('lean4').inspect('serverArgs'))
   const document = await vscode.workspace.openTextDocument(join(project, 'Demo.lean'))
   const editor = await vscode.window.showTextDocument(document)
-  const extension = vscode.extensions.getExtension('lean4-ide-tools.lean-semantic-highlighting')!
+  const extension = vscode.extensions.getExtension('lean4-ide-tools.lean4-semantic-highlighting')!
   assert.ok(extension, 'Development extension was discovered')
   assert.deepEqual(extension.packageJSON.extensionDependencies, ['leanprover.lean4'])
   await extension.activate()
